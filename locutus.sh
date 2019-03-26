@@ -107,6 +107,12 @@ borg_list() {
   fi
 }
 
+borg_delete() {
+  local BACKUP_NAME=$1
+  print_info "Deleting backup ${BACKUP_NAME} from repo ${REPO_DIR}"
+  borg delete --stats "${REPO_DIR}::${BACKUP_NAME}"
+}
+
 borg_info() {
   if [ "$#" -gt 0 ]; then
     borg info "${REPO_DIR}"::"$1"
@@ -136,7 +142,7 @@ borg_check() {
 }
 
 borg_mount() {
-  local BORG_MOUNT_POINT=$1
+  local BORG_MOUNT_POINT="$1"
   print_info "Mounting backup in foreground... Press CTRL+C to unmount the repository."
   borg mount --foreground "${REPO_DIR}" "${BORG_MOUNT_POINT}"
 }
@@ -155,7 +161,7 @@ borg_export_tar() {
 
 if [ "$#" -lt 1 ]; then
     print_info "Please specify the action you want to perform."
-    print_info "Valid actions: create, list, list <BACKUPNAME>, info, info <BACKUPNAME>, check, prune, sync, mount <MOUNTPOINT>, export-tar <BACKUPNAME> <FILENAME>."
+    print_info "Valid actions: create, list, list <BACKUPNAME>, delete <BACKUPNAME>, info, info <BACKUPNAME>, check, prune, sync, mount <MOUNTPOINT>, export-tar <BACKUPNAME> <FILENAME>."
     exit 0
 fi
 
@@ -182,6 +188,13 @@ list)
   else
     borg_list
   fi
+  ;;
+delete)
+  if [ ! "$#" -eq 2 ]; then
+    print_err "Please provide a backup to delete."
+    exit 1
+  fi
+  borg_delete "$2"
   ;;
 prune)
   borg_prune
