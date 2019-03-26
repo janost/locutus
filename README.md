@@ -1,15 +1,18 @@
 ## Locutus
 
 ### Introduction
-Locutus is a wrapper for [borg][1] and [rclone][4] to simplify the backup workflow of a typical home user and provide a secure and easy remote backup solution.  
+Locutus is a wrapper for [borg][1] to simplify the backup workflow of a typical home user and provide a secure and easy remote backup solution.  
 
-The utility works with a single encrypted borg repository where all configured paths are backed up and synced to a remote cloud storage via `rclone`. With borg's encrypted backup solution and [rclone][4]'s support for a wide variety of cloud storage providers it's easy to set up a secure, free or relatively cheap way for home users to back up their important data.
+The utility works with a single encrypted borg repository where all configured paths are backed up and synced to a remote cloud storage via `rclone` or any other custom tool. With borg's encrypted backup solution and [rclone][4]'s support for a wide variety of cloud storage providers it's easy to set up a secure, free or relatively cheap way for home users to back up their important data.
+
+### Remotes
+Locutus supports any custom command to sync the backup repository to a remote location. Rclone is recommended and works very well. You can find configuration examples for the `REPO_SYNC_COMMAND` variable in the `.env.template` file for `rclone` and `aws s3`.
 
 ### Dependencies
-You will need a fairly recent version of [bash][2], [pwgen][3], [borg][1] and [rclone][4].
+You will need a fairly recent version of [bash][2], [pwgen][3], [borg][1] and (optionally) [rclone][4].
 
 ### Setting up
-Clone the repository, rename `.env.template` to `.env` and customize the parameters to your needs. You will also need to setup your remote storage in `rclone` with `rclone config` before using this tool.
+Clone the repository, rename `.env.template` to `.env` and customize the parameters to your needs. You will also need to setup your remote storage in `rclone` with `rclone config` before using this tool if you're planning to use rclone.
 
 ### Note on backup security
 Locutus initializes your backup repository with `keyfile-blake2` encryption by default, and generates a random passphrase with `pwgen` and saves it to a file specified in the `PW_FILE` parameter in the `.env` file.  
@@ -24,6 +27,9 @@ Creates a backup with the current timestamp according to the configuration, prun
 
 #### locutus.sh list
 Lists backups in your repository.
+
+#### locutus.sh delete BACKUP_NAME
+Deletes the backup named BACKUP_NAME.
 
 #### locutus.sh list BACKUP_NAME
 Lists the contents of a backup in your repository.
