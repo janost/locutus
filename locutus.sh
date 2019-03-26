@@ -2,6 +2,8 @@
 
 set -Eeuo pipefail
 
+CONFIG_VARS=(REPO_DIR PW_FILE BACKUP_NAME BACKUP_LIST BORG_CREATE_OPTIONS BORG_PRUNE_OPTIONS PWGEN_CMD BORG_INIT_CMD BORG_PASSCOMMAND REPO_SYNC_COMMAND)
+
 print_info() {
   local GREEN='\033[0;32m'
   local NC='\033[0m'
@@ -38,10 +40,9 @@ print_warn() {
 check_dependencies() {
   command -v borg > /dev/null 2>&1 || { print_err "You need borg to use this utility."; exit 1; }
   command -v pwgen > /dev/null 2>&1 || { print_err "You need pwgen to use this utility."; exit 1; }
-  command -v rclone > /dev/null 2>&1 || { print_err "You need rclone to use this utility."; exit 1; }
 }
 
-load_conf() {
+load_config() {
   SCRIPT_DIR="$(dirname "$BASH_SOURCE")"
   if [ -f "${SCRIPT_DIR}/.env" ]; then
     set -o allexport
@@ -53,12 +54,33 @@ load_conf() {
   fi
 }
 
+check_var() {
+  local VAR_NAME="$1"
+  if [ -z "${!VAR_NAME}" ]; then
+    print_err "Configuration error: ${VAR_NAME} needs to be set."
+    exit 1
+  fi
+}
+
+check_config() {
+  set +u
+  for i in "${CONFIG_VARS[@]}"; do
+    check_var "$i"
+  done
+  set -u
+}
+
 generate_password() {
   print_info "Password file doesn't exists at ${PW_FILE}, generating..."
   PW_DIR="$(dirname "${PW_FILE}")"
   mkdir -p "${PW_DIR}"
   chmod 0700 "${PW_DIR}"
-  ${PWGEN_CMD} > "${PW_FILE}"
+  if ${PWGEN_CMD} > "${PW_FILE}"; then
+    print_info "Password successfully generated to ${PW_FILE}."
+  else
+    print_err "Failed to generate password. Aborting."
+    exit 1
+  fi
   chmod 0400 "${PW_FILE}"
   print_warn "Password has been generated to ${PW_FILE}. You might want to save it in a password manager."
 }
@@ -71,7 +93,7 @@ init_repo() {
     print_info "Borg repo has been created in ${REPO_DIR} using keyfile encryption."
     print_warn "You might want to backup the repo key in a password manager: \`borg key export ${REPO_DIR} <file>\`."
   else
-    print_err "Failed to create borg repository in ${REPO_DIR}. Aborting..."
+    print_err "Failed to create borg repository in ${REPO_DIR}. Aborting."
     exit 1
   fi
 }
@@ -82,17 +104,17 @@ borg_backup() {
   if borg create ${BORG_CREATE_OPTIONS} "${REPO_DIR}::${BACKUP_NAME}" ${BACKUP_LIST}; then
     print_info "Backup has been created successfully."
   else
-    print_err "Failed to create backup with borg. Aborting..."
+    print_err "Failed to create backup with borg. Aborting."
     exit 1
   fi
 }
 
 sync_repo() {
-  print_info "Syncing borg repo to remote storage ${REMOTE_NAME}..."
-  if rclone copy ${RCLONE_COPY_OPTIONS} "${REPO_DIR}" "${REMOTE_NAME}:${REMOTE_PATH}"; then
+  print_info "Syncing borg repo to remote storage..."
+  if ${REPO_SYNC_COMMAND}; then
     print_info "Backup repository has been synced to remote storage successfully."
   else
-    print_err "Failed to sync backup repository to remote storage. Aborting..."
+    print_err "Failed to sync backup repository to remote storage. Aborting."
     exit 1
   fi
 }
@@ -126,7 +148,7 @@ borg_prune() {
   if borg prune ${BORG_PRUNE_OPTIONS} "${REPO_DIR}"; then
     print_info "Backup repository has been pruned."
   else
-    print_err "Failed to prune backups. Aborting..."
+    print_err "Failed to prune backups. Aborting."
     exit 1
   fi  
 }
@@ -154,7 +176,7 @@ borg_export_tar() {
   if borg export-tar --tar-filter=auto "${REPO_DIR}"::"${BORG_ARCHIVE}" "${TARGET_FILE}"; then
     print_info "Tar file has been successfully exported."
   else
-    print_err "Error during tar file export. Aborting..."
+    print_err "Error during tar file export. Aborting."
     exit 1
   fi  
 }
@@ -166,7 +188,8 @@ if [ "$#" -lt 1 ]; then
 fi
 
 check_dependencies
-load_conf
+load_config
+check_config
 
 if [ ! -f "${PW_FILE}" ]; then
   generate_password
