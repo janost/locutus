@@ -58,7 +58,7 @@ generate_password() {
   PW_DIR="$(dirname "${PW_FILE}")"
   mkdir -p "${PW_DIR}"
   chmod 0700 "${PW_DIR}"
-  echo $(${PWGEN_CMD}) > "${PW_FILE}"
+  ${PWGEN_CMD} > "${PW_FILE}"
   chmod 0400 "${PW_FILE}"
   print_warn "Password has been generated to ${PW_FILE}. You might want to save it in a password manager."
 }
@@ -178,7 +178,7 @@ create)
   ;;
 list)
   if [ "$#" -gt 1 ]; then
-    borg_list $2 
+    borg_list "$2" 
   else
     borg_list
   fi
@@ -191,7 +191,7 @@ sync)
   ;;
 info)
   if [ "$#" -gt 1 ]; then
-    borg_info $2 
+    borg_info "$2" 
   else
     borg_info
   fi
@@ -204,14 +204,14 @@ mount)
     print_err "Please provide a mountpoint. Example: locutus.sh mount /mount/point"
     exit 1
   fi
-  borg_mount $2
+  borg_mount "$2"
   ;;
 export-tar)
   if [ ! "$#" -eq 3 ]; then
     print_err "Please provide a backup archive name and a target file. Example: locutus.sh 20190223-121420 /target/file/name.tar.xz"
     exit 1
   fi
-  borg_export_tar $2 $3
+  borg_export_tar "$2" "$3"
   ;;
 *)
   print_err "Unknown action: $1"
