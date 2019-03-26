@@ -79,7 +79,7 @@ init_repo() {
 borg_backup() {
   local BACKUP_NAME="$1"
   print_info "Creating backup ${BACKUP_NAME} with borg..."
-  if borg create ${BORG_CREATE_OPTIONS} "${REPO_DIR}::${BACKUP_NAME}" "${BACKUP_LIST}"; then
+  if borg create ${BORG_CREATE_OPTIONS} "${REPO_DIR}::${BACKUP_NAME}" ${BACKUP_LIST}; then
     print_info "Backup has been created successfully."
   else
     print_err "Failed to create backup with borg. Aborting..."
